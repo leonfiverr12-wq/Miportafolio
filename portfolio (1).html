@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Portafolio — Nova Soda 3D</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Russo+One&family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: radial-gradient(ellipse at 50% 0%, #1a0a2e 0%, #0d0015 50%, #000000 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    cursor: grab;
+    user-select: none;
+  }
+
+  body:active { cursor: grabbing; }
+
+  #canvas-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  canvas { display: block; }
+
+  .title {
+    position: fixed;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Russo One', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.15em;
+    background: linear-gradient(135deg, #ff2d55, #ff6b35, #ffcc00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 40px rgba(255,45,85,0.3);
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: rgba(255,255,255,0.25);
+    text-transform: uppercase;
+    z-index: 10;
+    animation: pulse 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.25; }
+    50% { opacity: 0.6; }
+  }
+
+  .particles {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    animation: float linear infinite;
+  }
+
+  @keyframes float {
+    0% { transform: translateY(100vh) scale(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+  }
+
+  /* --- PROJECTS PANEL --- */
+  #projects-panel {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.6s cubic-bezier(.4,0,.2,1);
+  }
+  #projects-panel.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #projects-panel .overlay-bg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  #projects-panel .panel-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 60px 20px 30px;
+    overflow-y: auto;
+  }
+
+  .panel-title {
+    font-family: 'Russo One', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.2em;
+    background: linear-gradient(135deg, #ff2d55, #ffcc00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .panel-subtitle {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.15em;
+    margin-bottom: 12px;
+    text-align: center;
+    max-width: 500px;
+    line-height: 1.6;
+  }
+
+  .project-card {
+    width: 90%;
+    max-width: 460px;
+    background: linear-gradient(135deg, rgba(255,45,85,0.08), rgba(255,204,0,0.06));
+    border: 1px solid rgba(255,107,53,0.2);
+    border-radius: 14px;
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-decoration: none;
+    transition: all 0.35s cubic-bezier(.4,0,.2,1);
+    transform: translateY(30px);
+    opacity: 0;
+    cursor: pointer;
+  }
+  #projects-panel.visible .project-card {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  .project-card:nth-child(3) { transition-delay: 0.08s; }
+  .project-card:nth-child(4) { transition-delay: 0.16s; }
+  .project-card:nth-child(5) { transition-delay: 0.24s; }
+  .project-card:nth-child(6) { transition-delay: 0.32s; }
+
+  .project-card:hover {
+    background: linear-gradient(135deg, rgba(255,45,85,0.18), rgba(255,204,0,0.12));
+    border-color: rgba(255,204,0,0.5);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 32px rgba(255,45,85,0.15);
+  }
+
+  .project-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ff2d55, #ff6b35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .project-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .project-name {
+    font-family: 'Russo One', sans-serif;
+    font-size: 0.82rem;
+    color: #fff;
+    letter-spacing: 0.06em;
+    margin-bottom: 3px;
+  }
+  .project-url {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    color: rgba(255,204,0,0.7);
+    letter-spacing: 0.04em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .project-arrow {
+    color: rgba(255,255,255,0.3);
+    font-size: 1rem;
+    transition: all 0.3s;
+  }
+  .project-card:hover .project-arrow {
+    color: #ffcc00;
+    transform: translateX(4px);
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 18px;
+    right: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.6);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    z-index: 10;
+  }
+  .close-btn:hover {
+    background: rgba(255,45,85,0.2);
+    border-color: rgba(255,45,85,0.4);
+    color: #fff;
+  }
+
+  /* WhatsApp button */
+  .wa-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    border-radius: 50px;
+    color: #fff;
+    font-family: 'Russo One', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    transition: all 0.35s;
+    margin-top: 8px;
+    transform: translateY(30px);
+    opacity: 0;
+    box-shadow: 0 4px 20px rgba(37,211,102,0.3);
+  }
+  #projects-panel.visible .wa-btn {
+    transform: translateY(0);
+    opacity: 1;
+    transition-delay: 0.4s;
+  }
+  .wa-btn:hover {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 8px 30px rgba(37,211,102,0.45);
+  }
+  .wa-btn svg { width: 22px; height: 22px; fill: #fff; }
+
+  /* Skills badge row */
+  .skills-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    max-width: 460px;
+    margin-top: 2px;
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  #projects-panel.visible .skills-row {
+    transform: translateY(0);
+    opacity: 1;
+    transition: all 0.5s cubic-bezier(.4,0,.2,1);
+    transition-delay: 0.45s;
+  }
+  .skill-badge {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.08em;
+    border: 1px solid rgba(255,204,0,0.25);
+    color: rgba(255,204,0,0.8);
+    background: rgba(255,204,0,0.05);
+  }
+
+  @media (max-width: 600px) {
+    .title { font-size: 1.3rem; top: 14px; }
+    .panel-title { font-size: 1.1rem; }
+    .project-card { padding: 14px 16px; }
+    .project-name { font-size: 0.72rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="title">MI PORTAFOLIO</div>
+
+<div class="particles" id="particles"></div>
+
+<div id="canvas-container"></div>
+
+<div class="hint">Arrastra para girar &bull; Scroll para zoom &bull; Gira al reverso para ver mis proyectos</div>
+
+<!-- Projects Panel -->
+<div id="projects-panel">
+  <div class="overlay-bg"></div>
+  <div class="panel-content">
+    <button class="close-btn" onclick="hideProjects()">✕</button>
+    <div class="panel-title">MIS PROYECTOS</div>
+    <div class="panel-subtitle">
+      +3 años creando experiencias web únicas, funcionales y visualmente impactantes. Cada proyecto es una pieza diseñada a la medida.
+    </div>
+
+    <a class="project-card" href="https://puntobinmobiliaria.com/" target="_blank" rel="noopener">
+      <div class="project-icon">🏠</div>
+      <div class="project-info">
+        <div class="project-name">Punto B Inmobiliaria</div>
+        <div class="project-url">puntobinmobiliaria.com</div>
+      </div>
+      <span class="project-arrow">→</span>
+    </a>
+
+    <a class="project-card" href="https://ns3829100-afk.github.io/Faro/#nosotros" target="_blank" rel="noopener">
+      <div class="project-icon">🔦</div>
+      <div class="project-info">
+        <div class="project-name">Faro</div>
+        <div class="project-url">ns3829100-afk.github.io/Faro</div>
+      </div>
+      <span class="project-arrow">→</span>
+    </a>
+
+    <a class="project-card" href="https://ns3829100-afk.github.io/Ticketon1/" target="_blank" rel="noopener">
+      <div class="project-icon">🎟️</div>
+      <div class="project-info">
+        <div class="project-name">Ticketon</div>
+        <div class="project-url">ns3829100-afk.github.io/Ticketon1</div>
+      </div>
+      <span class="project-arrow">→</span>
+    </a>
+
+    <a class="project-card" href="https://ns3829100-afk.github.io/Gaspachos2/" target="_blank" rel="noopener">
+      <div class="project-icon">🌶️</div>
+      <div class="project-info">
+        <div class="project-name">Gaspachos</div>
+        <div class="project-url">ns3829100-afk.github.io/Gaspachos2</div>
+      </div>
+      <span class="project-arrow">→</span>
+    </a>
+
+    <a class="wa-btn" href="https://wa.me/522216535410" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      CONTÁCTAME
+    </a>
+
+    <div class="skills-row">
+      <span class="skill-badge">HTML5</span>
+      <span class="skill-badge">CSS3</span>
+      <span class="skill-badge">JavaScript</span>
+      <span class="skill-badge">Three.js</span>
+      <span class="skill-badge">React</span>
+      <span class="skill-badge">Diseño UI/UX</span>
+      <span class="skill-badge">Responsive</span>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// --- Projects panel logic ---
+let panelVisible = false;
+function showProjects() {
+  if (panelVisible) return;
+  panelVisible = true;
+  document.getElementById('projects-panel').classList.add('visible');
+}
+function hideProjects() {
+  panelVisible = false;
+  document.getElementById('projects-panel').classList.remove('visible');
+}
+
+// --- Particles ---
+const particlesContainer = document.getElementById('particles');
+for (let i = 0; i < 25; i++) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  const size = Math.random() * 4 + 1;
+  p.style.width = size + 'px';
+  p.style.height = size + 'px';
+  p.style.left = Math.random() * 100 + '%';
+  p.style.animationDuration = (Math.random() * 8 + 6) + 's';
+  p.style.animationDelay = (Math.random() * 10) + 's';
+  const colors = ['rgba(255,45,85,0.3)', 'rgba(255,107,53,0.3)', 'rgba(255,204,0,0.25)', 'rgba(0,200,255,0.2)'];
+  p.style.background = colors[Math.floor(Math.random() * colors.length)];
+  particlesContainer.appendChild(p);
+}
+
+// --- Three.js Scene ---
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 0.5, 6);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+container.appendChild(renderer.domElement);
+
+// --- Lights ---
+const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
+scene.add(ambientLight);
+
+const mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
+mainLight.position.set(3, 5, 4);
+mainLight.castShadow = true;
+scene.add(mainLight);
+
+const fillLight = new THREE.DirectionalLight(0x4488ff, 0.4);
+fillLight.position.set(-3, 2, -2);
+scene.add(fillLight);
+
+const rimLight = new THREE.PointLight(0xff2d55, 1.5, 10);
+rimLight.position.set(-2, 1, -3);
+scene.add(rimLight);
+
+const topLight = new THREE.PointLight(0xffcc00, 0.8, 10);
+topLight.position.set(0, 4, 0);
+scene.add(topLight);
+
+// --- Create Soda Can ---
+const canGroup = new THREE.Group();
+
+// Can body
+const bodyGeometry = new THREE.CylinderGeometry(0.82, 0.82, 2.8, 64, 1, true);
+const bodyMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0xcc0022,
+  metalness: 0.85,
+  roughness: 0.15,
+  clearcoat: 0.8,
+  clearcoatRoughness: 0.1,
+  reflectivity: 1.0,
+  side: THREE.DoubleSide,
+});
+const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+canGroup.add(body);
+
+// Label band (middle)
+const labelGeometry = new THREE.CylinderGeometry(0.825, 0.825, 1.6, 64, 1, true);
+const labelMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0x1a0033,
+  metalness: 0.3,
+  roughness: 0.4,
+  clearcoat: 0.5,
+  side: THREE.DoubleSide,
+});
+const label = new THREE.Mesh(labelGeometry, labelMaterial);
+label.position.y = -0.1;
+canGroup.add(label);
+
+// Accent stripes
+const stripeGeometry = new THREE.CylinderGeometry(0.83, 0.83, 0.08, 64, 1, true);
+const stripeMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0xffcc00,
+  metalness: 0.9,
+  roughness: 0.1,
+  emissive: 0xffcc00,
+  emissiveIntensity: 0.3,
+  side: THREE.DoubleSide,
+});
+const stripe1 = new THREE.Mesh(stripeGeometry, stripeMaterial);
+stripe1.position.y = 0.6;
+canGroup.add(stripe1);
+
+const stripe2 = stripe1.clone();
+stripe2.position.y = -0.8;
+canGroup.add(stripe2);
+
+const stripeOrangeGeom = new THREE.CylinderGeometry(0.831, 0.831, 0.04, 64, 1, true);
+const stripeOrangeMat = new THREE.MeshPhysicalMaterial({
+  color: 0xff6b35, metalness: 0.8, roughness: 0.1,
+  emissive: 0xff6b35, emissiveIntensity: 0.2, side: THREE.DoubleSide,
+});
+const stripe3 = new THREE.Mesh(stripeOrangeGeom, stripeOrangeMat);
+stripe3.position.y = 0.1;
+canGroup.add(stripe3);
+
+// Top cap
+const topCapGeometry = new THREE.CylinderGeometry(0.65, 0.82, 0.25, 64);
+const topCapMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0xd0d0d8, metalness: 0.95, roughness: 0.05, clearcoat: 1.0,
+});
+const topCap = new THREE.Mesh(topCapGeometry, topCapMaterial);
+topCap.position.y = 1.52;
+canGroup.add(topCap);
+
+const topRimGeometry = new THREE.TorusGeometry(0.65, 0.03, 16, 64);
+const topRim = new THREE.Mesh(topRimGeometry, topCapMaterial);
+topRim.position.y = 1.65;
+topRim.rotation.x = Math.PI / 2;
+canGroup.add(topRim);
+
+const topDiscGeometry = new THREE.CircleGeometry(0.65, 64);
+const topDisc = new THREE.Mesh(topDiscGeometry, topCapMaterial);
+topDisc.position.y = 1.65;
+topDisc.rotation.x = -Math.PI / 2;
+canGroup.add(topDisc);
+
+// Pull tab
+const tabShape = new THREE.Shape();
+tabShape.moveTo(-0.12, 0);
+tabShape.lineTo(-0.1, 0.28);
+tabShape.quadraticCurveTo(0, 0.38, 0.1, 0.28);
+tabShape.lineTo(0.12, 0);
+tabShape.quadraticCurveTo(0, -0.05, -0.12, 0);
+const tabHole = new THREE.Path();
+tabHole.absellipse(0, 0.18, 0.04, 0.06, 0, Math.PI * 2, false);
+tabShape.holes.push(tabHole);
+
+const tabGeometry = new THREE.ExtrudeGeometry(tabShape, {
+  depth: 0.015, bevelEnabled: true, bevelThickness: 0.005, bevelSize: 0.005, bevelSegments: 3
+});
+const tabMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0xc0c0c8, metalness: 0.95, roughness: 0.08, clearcoat: 1.0,
+});
+const tab = new THREE.Mesh(tabGeometry, tabMaterial);
+tab.position.set(0, 1.66, 0.15);
+tab.rotation.x = -Math.PI / 2;
+canGroup.add(tab);
+
+const rivetGeometry = new THREE.SphereGeometry(0.04, 16, 16);
+const rivet = new THREE.Mesh(rivetGeometry, tabMaterial);
+rivet.position.set(0, 1.67, 0.15);
+rivet.scale.y = 0.4;
+canGroup.add(rivet);
+
+// Bottom cap
+const bottomCapGeometry = new THREE.CylinderGeometry(0.82, 0.72, 0.15, 64);
+const bottomCap = new THREE.Mesh(bottomCapGeometry, topCapMaterial);
+bottomCap.position.y = -1.47;
+canGroup.add(bottomCap);
+
+const bottomGeom = new THREE.SphereGeometry(0.65, 32, 16, 0, Math.PI * 2, 0, Math.PI / 3);
+const bottomMat = new THREE.MeshPhysicalMaterial({
+  color: 0xb0b0b8, metalness: 0.95, roughness: 0.1, side: THREE.DoubleSide,
+});
+const bottomConcave = new THREE.Mesh(bottomGeom, bottomMat);
+bottomConcave.position.y = -1.55;
+bottomConcave.rotation.x = Math.PI;
+canGroup.add(bottomConcave);
+
+// Water droplets
+const dropletGeometry = new THREE.SphereGeometry(0.025, 8, 8);
+const dropletMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0xffffff, metalness: 0.0, roughness: 0.0,
+  transmission: 0.9, thickness: 0.05, ior: 1.33,
+  clearcoat: 1.0, opacity: 0.7, transparent: true,
+});
+
+for (let i = 0; i < 60; i++) {
+  const angle = Math.random() * Math.PI * 2;
+  const y = (Math.random() - 0.5) * 2.2;
+  const r = 0.84 + Math.random() * 0.02;
+  const droplet = new THREE.Mesh(dropletGeometry, dropletMaterial);
+  const s = 0.4 + Math.random() * 1.2;
+  droplet.scale.set(s, s * (0.8 + Math.random() * 0.6), s);
+  droplet.position.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
+  droplet.lookAt(0, y, 0);
+  canGroup.add(droplet);
+}
+
+// --- FRONT SIDE: Photo + Name ---
+function createFrontTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  // Background gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, 512);
+  grad.addColorStop(0, '#1a0033');
+  grad.addColorStop(1, '#0d001a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 512, 512);
+
+  // "WEB DEVELOPER" top
+  ctx.fillStyle = '#ffcc00';
+  ctx.font = 'bold 28px Orbitron, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('WEB DEVELOPER', 256, 48);
+
+  // Circular placeholder for photo
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(256, 195, 95, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.clip();
+  // Photo BG
+  ctx.fillStyle = '#2a1050';
+  ctx.fillRect(161, 100, 190, 190);
+  ctx.restore();
+
+  // Ring around photo
+  ctx.beginPath();
+  ctx.arc(256, 195, 97, 0, Math.PI * 2);
+  ctx.strokeStyle = '#ff6b35';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Name
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 30px "Russo One", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('PORTAFOLIO', 256, 330);
+
+  // Tagline
+  ctx.fillStyle = 'rgba(255,204,0,0.8)';
+  ctx.font = '16px "Orbitron", sans-serif';
+  ctx.fillText('★ DISEÑO WEB ★', 256, 365);
+
+  // Creativo
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '13px "Orbitron", sans-serif';
+  ctx.fillText('+3 AÑOS DE EXPERIENCIA', 256, 395);
+
+  // WhatsApp
+  ctx.fillStyle = 'rgba(37,211,102,0.9)';
+  ctx.font = 'bold 18px "Space Mono", monospace';
+  ctx.fillText('☎ 221 653 5410', 256, 440);
+
+  // Gira hint
+  ctx.fillStyle = 'rgba(255,107,53,0.6)';
+  ctx.font = '11px "Space Mono", monospace';
+  ctx.fillText('↻ GIRA PARA VER PROYECTOS', 256, 480);
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+// Load photo and create front sprite with image
+const photoImg = new Image();
+photoImg.crossOrigin = 'anonymous';
+photoImg.src = 'https://i.ibb.co/5XTkw39T/Whats-App-Image-2026-03-19-at-9-52-21-AM.jpg';
+
+function createFrontSpriteWithPhoto(img) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 1200;
+  const ctx = canvas.getContext('2d');
+  const cx = 512;
+
+  // "WEB DEVELOPER" top
+  ctx.fillStyle = '#ffcc00';
+  ctx.font = 'bold 58px Orbitron, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('WEB DEVELOPER', cx, 80);
+
+  // Circular photo
+  if (img) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, 390, 190, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    const aspect = img.width / img.height;
+    let dw = 380, dh = 380;
+    if (aspect > 1) { dw = 380 * aspect; } else { dh = 380 / aspect; }
+    ctx.drawImage(img, cx - dw/2, 390 - dh/2, dw, dh);
+    ctx.restore();
+
+    // Ring
+    ctx.beginPath();
+    ctx.arc(cx, 390, 195, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ff6b35';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, 390, 202, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,204,0,0.4)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  // Name
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 68px "Russo One", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('PORTAFOLIO', cx, 680);
+
+  // Tagline
+  ctx.fillStyle = 'rgba(255,204,0,0.9)';
+  ctx.font = 'bold 36px "Orbitron", sans-serif';
+  ctx.fillText('★ DISEÑO WEB ★', cx, 750);
+
+  // Experience
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '28px "Orbitron", sans-serif';
+  ctx.fillText('+3 AÑOS DE EXPERIENCIA', cx, 810);
+
+  // WhatsApp
+  ctx.fillStyle = 'rgba(37,211,102,0.95)';
+  ctx.font = 'bold 38px sans-serif';
+  ctx.fillText('☎ 221 653 5410', cx, 900);
+
+  // Hint to flip
+  ctx.fillStyle = 'rgba(255,107,53,0.6)';
+  ctx.font = '24px sans-serif';
+  ctx.fillText('↻ GIRA PARA VER PROYECTOS', cx, 990);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.95 });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.8, 1.8 * (1200/1024), 1);
+  sprite.position.set(0, -0.05, 0.86);
+  sprite.name = 'frontSprite';
+
+  // Remove old front sprite if exists
+  const old = canGroup.getObjectByName('frontSprite');
+  if (old) canGroup.remove(old);
+
+  canGroup.add(sprite);
+}
+
+// Initially create without photo
+createFrontSpriteWithPhoto(null);
+
+// When photo loads, recreate
+photoImg.onload = function() {
+  createFrontSpriteWithPhoto(photoImg);
+};
+
+// --- BACK SIDE: Projects list text ---
+function createBackTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 1200;
+  const ctx = canvas.getContext('2d');
+  const cx = 512;
+
+  ctx.fillStyle = '#ffcc00';
+  ctx.font = 'bold 56px Orbitron, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('MIS PROYECTOS', cx, 85);
+
+  // Divider
+  ctx.strokeStyle = 'rgba(255,107,53,0.5)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(200, 120);
+  ctx.lineTo(824, 120);
+  ctx.stroke();
+
+  const projects = [
+    { name: 'Punto B Inmobiliaria', icon: '🏠' },
+    { name: 'Faro', icon: '🔦' },
+    { name: 'Ticketon', icon: '🎟️' },
+    { name: 'Gaspachos', icon: '🌶️' },
+  ];
+
+  let y = 220;
+  projects.forEach((p) => {
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.font = 'bold 44px sans-serif';
+    ctx.fillText(p.icon + '  ' + p.name, cx, y);
+    y += 100;
+  });
+
+  // CTA
+  ctx.fillStyle = 'rgba(255,204,0,0.7)';
+  ctx.font = 'bold 30px sans-serif';
+  ctx.fillText('TOCA PARA VER LINKS →', cx, y + 50);
+
+  // Skills
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '24px sans-serif';
+  ctx.fillText('HTML · CSS · JS · React · Three.js · UI/UX', cx, y + 120);
+
+  // WhatsApp
+  ctx.fillStyle = 'rgba(37,211,102,0.85)';
+  ctx.font = 'bold 34px sans-serif';
+  ctx.fillText('☎ WhatsApp: 221 653 5410', cx, y + 190);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.95 });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.8, 1.8 * (1200/1024), 1);
+  sprite.position.set(0, -0.05, -0.86);
+  sprite.name = 'backSprite';
+  // Face backwards
+  return sprite;
+}
+
+const backSprite = createBackTexture();
+canGroup.add(backSprite);
+
+// Glowing ring on floor
+const ringGeom = new THREE.TorusGeometry(1.5, 0.02, 8, 64);
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xff2d55, transparent: true, opacity: 0.4 });
+const ring = new THREE.Mesh(ringGeom, ringMat);
+ring.rotation.x = -Math.PI / 2;
+ring.position.y = -1.95;
+scene.add(ring);
+
+scene.add(canGroup);
+
+// --- Interaction ---
+let isDragging = false;
+let prevMouse = { x: 0, y: 0 };
+let rotVelocity = { x: 0, y: 0 };
+let targetRotY = 0;
+let targetRotX = 0;
+let lastInteraction = 0;
+let wasBackFacing = false;
+
+renderer.domElement.addEventListener('pointerdown', (e) => {
+  isDragging = true;
+  prevMouse.x = e.clientX;
+  prevMouse.y = e.clientY;
+  rotVelocity.x = 0;
+  rotVelocity.y = 0;
+});
+
+window.addEventListener('pointermove', (e) => {
+  if (!isDragging) return;
+  const dx = e.clientX - prevMouse.x;
+  const dy = e.clientY - prevMouse.y;
+  rotVelocity.y = dx * 0.008;
+  rotVelocity.x = dy * 0.005;
+  targetRotY += dx * 0.008;
+  targetRotX += dy * 0.005;
+  targetRotX = Math.max(-0.8, Math.min(0.8, targetRotX));
+  prevMouse.x = e.clientX;
+  prevMouse.y = e.clientY;
+});
+
+window.addEventListener('pointerup', () => {
+  isDragging = false;
+  // Check if back is facing user -> show projects
+  checkBackFacing();
+});
+
+renderer.domElement.addEventListener('wheel', (e) => {
+  camera.position.z += e.deltaY * 0.005;
+  camera.position.z = Math.max(3, Math.min(10, camera.position.z));
+});
+
+renderer.domElement.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 1) {
+    isDragging = true;
+    prevMouse.x = e.touches[0].clientX;
+    prevMouse.y = e.touches[0].clientY;
+  }
+}, { passive: true });
+
+renderer.domElement.addEventListener('touchmove', (e) => {
+  if (!isDragging || e.touches.length !== 1) return;
+  const dx = e.touches[0].clientX - prevMouse.x;
+  const dy = e.touches[0].clientY - prevMouse.y;
+  targetRotY += dx * 0.008;
+  targetRotX += dy * 0.005;
+  targetRotX = Math.max(-0.8, Math.min(0.8, targetRotX));
+  prevMouse.x = e.touches[0].clientX;
+  prevMouse.y = e.touches[0].clientY;
+}, { passive: true });
+
+renderer.domElement.addEventListener('touchend', () => {
+  isDragging = false;
+  checkBackFacing();
+}, { passive: true });
+
+function checkBackFacing() {
+  // Normalize rotation
+  const normY = ((canGroup.rotation.y % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  const isBack = (normY > Math.PI * 0.4 && normY < Math.PI * 1.6);
+  if (isBack && !wasBackFacing) {
+    showProjects();
+  }
+  wasBackFacing = isBack;
+}
+
+// Also allow click on can to toggle projects
+renderer.domElement.addEventListener('click', (e) => {
+  // Simple: if back is roughly facing, show panel
+  const normY = ((canGroup.rotation.y % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  if (normY > Math.PI * 0.4 && normY < Math.PI * 1.6) {
+    showProjects();
+  }
+});
+
+// --- Animation Loop ---
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  if (!isDragging) {
+    if (Date.now() - lastInteraction > 2000) {
+      targetRotY += 0.006;
+    }
+    rotVelocity.x *= 0.95;
+    rotVelocity.y *= 0.95;
+    targetRotY += rotVelocity.y;
+  } else {
+    lastInteraction = Date.now();
+  }
+
+  canGroup.rotation.y += (targetRotY - canGroup.rotation.y) * 0.08;
+  canGroup.rotation.x += (targetRotX - canGroup.rotation.x) * 0.08;
+  canGroup.position.y = Math.sin(t * 1.2) * 0.06;
+
+  rimLight.position.x = Math.cos(t * 0.5) * 3;
+  rimLight.position.z = Math.sin(t * 0.5) * 3;
+
+  ring.material.opacity = 0.2 + Math.sin(t * 2) * 0.15;
+  ring.scale.set(1 + Math.sin(t) * 0.03, 1 + Math.sin(t) * 0.03, 1);
+
+  // Auto-detect back facing for continuous rotation
+  const normY = ((canGroup.rotation.y % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  const isBack = (normY > Math.PI * 0.4 && normY < Math.PI * 1.6);
+  if (isBack && !wasBackFacing && !isDragging) {
+    // Don't auto-show during idle rotation to avoid annoyance
+  }
+  wasBackFacing = isBack;
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
